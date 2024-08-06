@@ -35,6 +35,9 @@ class DataArguments:
 
     # for video training
     num_video_frames: int = 8
+    validation_data_path: Optional[str] = field(
+        default=None, metadata={"help": "Path to the validation data."}
+    )
 
 
 @dataclass

@@ -41,7 +41,7 @@ from torchvision.transforms import Resize
 from transformers import PreTrainedTokenizer
 
 import llava.data.datasets_mixture as datasets_mixture
-from llava import conversation as conversation_lib
+from llava import conversation as conversation_lib, data
 from llava.constants import (DEFAULT_IM_END_TOKEN, DEFAULT_IM_START_TOKEN,
                              DEFAULT_IMAGE_TOKEN, IGNORE_INDEX,
                              IMAGE_TOKEN_INDEX)
@@ -1967,8 +1967,8 @@ def make_supervised_data_module(
     This function is originally implemented by the LLaVA team and
     modified by Jason Lu, Haotian Tang and Ligeng Zhu."""
     datasets_mixture.register_datasets_mixtures()
-    train_dataset = build_datasets(data_args, training_args=training_args, tokenizer=tokenizer, split="train")
-    eval_dataset = build_datasets(data_args, training_args=training_args, tokenizer=tokenizer, split="eval")
+    train_dataset = build_datasets_ft(data_args, training_args=training_args, tokenizer=tokenizer, split="train")
+    eval_dataset = build_datasets_ft(data_args, training_args=training_args, tokenizer=tokenizer, split="eval")
     data_collator = DataCollatorForSupervisedDataset(tokenizer=tokenizer, data_args=data_args)
     return dict(
         train_dataset=train_dataset,
@@ -1976,6 +1976,23 @@ def make_supervised_data_module(
         data_collator=data_collator,
     )
 
+def build_datasets_ft(
+    data_args: DataArguments,
+    training_args: TrainingArguments,
+    tokenizer: PreTrainedTokenizer,
+    split: str = "train",
+):
+    data_path = data_args.data_path if split == "train" else data_args.validation_data_path
+    ds = LazySupervisedDataset(
+        tokenizer=tokenizer, data_path=data_path, data_args=data_args, image_folder=data_args.image_folder, training_args=training_args,
+    )
+
+    if split == "train":
+        training_args.sample_lens = [len(ds)]
+    elif split == "eval":
+        training_args.eval_sample_lens = [len(ds)]
+
+    return ds
 
 def build_datasets(
     data_args: DataArguments,
