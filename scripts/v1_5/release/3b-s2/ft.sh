@@ -1,6 +1,8 @@
 #!/bin/bash
 
 master_addr=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n 1)
+echo "master_addr="$(master_addr)
+echo "hostnames="$(scontrol show hostnames $SLURM_JOB_NODELIST)
 export MASTER_ADDR=${master_addr:-"127.0.0.1"}
 export CURRENT_RANK=${SLURM_PROCID:-"0"}
 worker_list=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | tr '\n' ' ')
@@ -8,7 +10,7 @@ n_node=${SLURM_JOB_NUM_NODES:-1}
 
 echo "MASTER_ADDR="$MASTER_ADDR
 echo "JobID: $SLURM_JOB_ID | Full list: $worker_list"
-BASE_MODEL_PATH="Efficient-Large-Model/VILA1.5-3b-s2"
+BASE_MODEL_PATH="Efficient-Large-Model/VILA1.5-40B-AWQ"
 echo "BASE_MODEL_PATH="$BASE_MODEL_PATH
 
 n_nodes=1
@@ -25,7 +27,7 @@ torchrun --nnodes=$n_node --nproc_per_node=1 --master_port=25001 \
     --deepspeed ./scripts/zero3.json \
     --model_name_or_path $BASE_MODEL_PATH \
     --version v1 \
-    --data_path ../LLaVA/armbench/train/dataset.json \
+    --data_path ../LLaVA/armbench/train/dataset100.json \
     --validation_data_path ../LLaVA/armbench/validation/dataset.json \
     --image_folder ../LLaVA/armbench/images/ \
     --vision_tower google/siglip-so400m-patch14-384 \
@@ -43,15 +45,15 @@ torchrun --nnodes=$n_node --nproc_per_node=1 --master_port=25001 \
     --image_aspect_ratio resize \
     --bf16 True \
     --output_dir ./checkpoints/$OUTPUT \
-    --num_train_epochs 1 \
-    --per_device_train_batch_size $bs \
+    --num_train_epochs 10 \
+    --per_device_train_batch_size 16 \ # 64
     --per_device_eval_batch_size 4 \
-    --gradient_accumulation_steps 2 \
+    --gradient_accumulation_steps 2 \ # 2
     --evaluation_strategy "no" \
     --save_strategy "steps" \
     --save_steps 100 \
     --save_total_limit 1 \
-    --learning_rate 1e-4 \
+    --learning_rate 1e-4 \ # 1e-5
     --weight_decay 0. \
     --warmup_ratio 0.03 \
     --lr_scheduler_type "cosine" \

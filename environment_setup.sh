@@ -14,6 +14,7 @@ wget https://github.com/Dao-AILab/flash-attention/releases/download/v2.4.2/flash
 pip install flash_attn-2.4.2+cu118torch2.0cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
 pip install -e .
 pip install -e ".[train]"
+pip install --upgrade numpy==1.26.4  
 
 pip install git+https://github.com/huggingface/transformers@v4.36.2
 site_pkg_path=$(python -c 'import site; print(site.getsitepackages()[0])')
