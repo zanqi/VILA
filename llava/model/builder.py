@@ -73,13 +73,14 @@ def load_pretrained_model(
             )
         if "lora" in model_name.lower() and model_base is not None:
             lora_cfg_pretrained = AutoConfig.from_pretrained(model_path)
-            tokenizer = AutoTokenizer.from_pretrained(
-                model_base, use_fast=False, legacy=False
-            )
+            # tokenizer = AutoTokenizer.from_pretrained(
+            #     model_base, use_fast=False, legacy=False
+            # )
             print("Loading LLaVA from base model...")
             model = LlavaLlamaForCausalLM.from_pretrained(
                 model_base, low_cpu_mem_usage=True, config=lora_cfg_pretrained, **kwargs
             )
+            tokenizer = model.tokenizer
             token_num, tokem_dim = model.lm_head.out_features, model.lm_head.in_features
             if model.lm_head.weight.shape[0] != token_num:
                 model.lm_head.weight = torch.nn.Parameter(

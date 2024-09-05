@@ -1,0 +1,2 @@
+<image>\n<image>\n<image>\nFind all instances of objects across the images. Format the result as a list of dictionaries. Each dictionary contains info about an object, including the following fields:
+- "bboxes": a list of bounding boxes, i.e. [(x1, y1, w1, h1), (x2, y2, w2, h2), null, ...], where x and y are the normalized pixel locations of the object centers, and w and h are the normalized object widths and heights. All values of x, y, w, and h should be between 0 and 1. If the object is not present in an image, the bounding box should be null.

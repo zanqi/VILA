@@ -1,5 +1,24 @@
 #!/bin/bash
 
+#SBATCH --job-name=vila_train
+#SBATCH --mail-type=END
+#SBATCH --mail-user=zanqil@cs.washington.edu
+
+#SBATCH --account=sciencehub
+#SBATCH --partition=gpu-a40 #ckpt
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=12
+#SBATCH --mem=240G
+#SBATCH --gpus=2 # a40:2 or a100:1
+#SBATCH --time=2-00:00:00
+
+#SBATCH --chdir=/gscratch/sciencehub/zanqil/VILA
+#SBATCH --export=all
+#SBATCH --output=/gscratch/sciencehub/zanqil/VILA/output
+#SBATCH --error=/gscratch/sciencehub/zanqil/VILA/error
+
+#!/bin/bash
+
 master_addr=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n 1)
 echo "master_addr="$(master_addr)
 echo "hostnames="$(scontrol show hostnames $SLURM_JOB_NODELIST)
@@ -14,10 +33,10 @@ BASE_MODEL_PATH="Efficient-Large-Model/VILA1.5-3B-s2"
 echo "BASE_MODEL_PATH="$BASE_MODEL_PATH
 
 n_nodes=1
-OUTPUT="v1_5-3b-s2-ft-test"
+OUTPUT="v1_5-3b-s2-ft"
 
 
-torchrun --nnodes=$n_node --nproc_per_node=1 --master_port=25001 \
+CMD="torchrun --nnodes=$n_node --nproc_per_node=1 --master_port=25001 \
     --master_addr "127.0.0.1" --node_rank=$CURRENT_RANK \
     llava/train/train_mem.py \
     --deepspeed ./scripts/zero3_offload.json \
@@ -38,14 +57,13 @@ torchrun --nnodes=$n_node --nproc_per_node=1 --master_port=25001 \
     --mm_vision_select_layer -2 \
     --mm_use_im_start_end False \
     --mm_use_im_patch_token False \
-    --loc_token True \
     --image_aspect_ratio resize \
     --bf16 True \
     --output_dir ./checkpoints/$OUTPUT \
     --num_train_epochs 1 \
     --per_device_train_batch_size 32 \
     --per_device_eval_batch_size 4 \
-    --gradient_accumulation_steps 1 \
+    --gradient_accumulation_steps 4 \
     --evaluation_strategy "steps" \
     --eval_steps 0.1 \
     --save_strategy "steps" \
@@ -62,4 +80,9 @@ torchrun --nnodes=$n_node --nproc_per_node=1 --master_port=25001 \
     --dataloader_num_workers 4 \
     --lazy_preprocess True \
     --vflan_no_system_prompt True \
-    --report_to wandb
+    --report_to wandb"
+
+
+echo $CMD
+
+apptainer exec --pwd /gscratch/sciencehub/zanqil/VILA  --nv  -B /gscratch /mmfs1/gscratch/sciencehub/amazon_perception/pytorch.sif bash -c "source ~/.bashrc ; conda activate vila ; export HF_HOME=/gscratch/sciencehub/zanqil/cache ; export WANDB_API_KEY=4247a6d61ee555dcc2835bbe242de06d61ed7d09 ; $CMD"

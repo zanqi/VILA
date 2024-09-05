@@ -1,21 +1,23 @@
 #!/bin/bash
 
-#SBATCH --job-name=vila_train
+#SBATCH --job-name=vila_shelf
 #SBATCH --mail-type=END
 #SBATCH --mail-user=zanqil@cs.washington.edu
 
 #SBATCH --account=sciencehub
-#SBATCH --partition=gpu-a40
+#SBATCH --partition=ckpt
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=12
 #SBATCH --mem=240G
-#SBATCH --gpus=2
+#SBATCH --gpus=a40:1
 #SBATCH --time=2-00:00:00
 
 #SBATCH --chdir=/gscratch/sciencehub/zanqil/VILA
 #SBATCH --export=all
 #SBATCH --output=/gscratch/sciencehub/zanqil/VILA/output
 #SBATCH --error=/gscratch/sciencehub/zanqil/VILA/error
+
+#!/bin/bash
 
 master_addr=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n 1)
 echo "master_addr="$(master_addr)
@@ -27,25 +29,21 @@ n_node=${SLURM_JOB_NUM_NODES:-1}
 
 echo "MASTER_ADDR="$MASTER_ADDR
 echo "JobID: $SLURM_JOB_ID | Full list: $worker_list"
-BASE_MODEL_PATH="Efficient-Large-Model/VILA1.5-3b-s2"
+BASE_MODEL_PATH="Efficient-Large-Model/VILA1.5-3B-s2"
 echo "BASE_MODEL_PATH="$BASE_MODEL_PATH
 
 n_nodes=1
-bs=16
-# OUTPUT of stage 2 script
-STAGE2_PATH=$1
-# Final output checkpoint path
-OUTPUT=$2
+OUTPUT="v1_5-3b-s2-ft-shelf-arm"
 
 
-CMD=torchrun --nnodes=$n_node --nproc_per_node=1 --master_port=25001 \
-    --master_addr $MASTER_ADDR --node_rank=$CURRENT_RANK \
+CMD="torchrun --nnodes=$n_node --nproc_per_node=1 --master_port=25001 \
+    --master_addr "127.0.0.1" --node_rank=$CURRENT_RANK \
     llava/train/train_mem.py \
-    --deepspeed ./scripts/zero3.json \
+    --deepspeed ./scripts/zero3_offload.json \
     --model_name_or_path $BASE_MODEL_PATH \
     --version v1 \
-    --data_path ../LLaVA/armbench/train/dataset.json \
-    --validation_data_path ../LLaVA/armbench/validation/dataset.json \
+    --data_path ../LLaVA/armbench/train/dataset_shelf_arm.json \
+    --validation_data_path ../LLaVA/armbench/validation/dataset_shelf_arm.json \
     --image_folder ../LLaVA/armbench/images/ \
     --vision_tower google/siglip-so400m-patch14-384 \
     --s2 True \
@@ -53,7 +51,7 @@ CMD=torchrun --nnodes=$n_node --nproc_per_node=1 --master_port=25001 \
     --s2_max_split_size 384 \
     --mm_vision_select_feature cls_patch \
     --mm_projector mlp_downsample \
-    --tune_vision_tower True \
+    --tune_vision_tower False \
     --tune_mm_projector True \
     --tune_language_model True \
     --mm_vision_select_layer -2 \
@@ -63,28 +61,28 @@ CMD=torchrun --nnodes=$n_node --nproc_per_node=1 --master_port=25001 \
     --bf16 True \
     --output_dir ./checkpoints/$OUTPUT \
     --num_train_epochs 1 \
-    --per_device_train_batch_size 1 \
-    --per_device_eval_batch_size 1 \
-    --gradient_accumulation_steps 32 \
-    --evaluation_strategy "no" \
+    --per_device_train_batch_size 32 \
+    --per_device_eval_batch_size 4 \
+    --gradient_accumulation_steps 4 \
+    --evaluation_strategy "steps" \
+    --eval_steps 0.1 \
     --save_strategy "steps" \
     --save_steps 100 \
     --save_total_limit 1 \
-    --learning_rate 1e-4 \
+    --learning_rate 1e-5 \
     --weight_decay 0. \
     --warmup_ratio 0.03 \
     --lr_scheduler_type "cosine" \
     --logging_steps 1 \
     --tf32 True \
-    --model_max_length 4096 \
+    --model_max_length 2048 \
     --gradient_checkpointing True \
-    --dataloader_num_workers 16 \
+    --dataloader_num_workers 4 \
     --lazy_preprocess True \
     --vflan_no_system_prompt True \
-    --report_to wandb
+    --report_to wandb"
+
 
 echo $CMD
 
-# Modules to use (optional).
-apptainer exec --pwd /gscratch/sciencehub/zanqil/VILA  --nv  -B /gscratch --overlay /mmfs1/gscratch/sciencehub/amazon_perception/vila_overlay.img /mmfs1/gscratch/sciencehub/amazon_perception/pytorch.sif  "export HF_HOME=/gscratch/sciencehub/zanqil/cache ; export WANDB_API_KEY=4247a6d61ee555dcc2835bbe242de06d61ed7d09 ; $CMD"
-
+apptainer exec --pwd /gscratch/sciencehub/zanqil/VILA  --nv  -B /gscratch /mmfs1/gscratch/sciencehub/amazon_perception/pytorch.sif bash -c "source ~/.bashrc ; conda activate vila ; export HF_HOME=/gscratch/sciencehub/zanqil/cache ; export WANDB_API_KEY=4247a6d61ee555dcc2835bbe242de06d61ed7d09 ; $CMD"

@@ -11,8 +11,8 @@ from tqdm import tqdm
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_path', type=str, default="checkpoints/v1_5-3b-s2-ft-xyxy-sorted")
-    parser.add_argument('--input-file', type=str, default="../LLaVA/armbench/test/dataset_xyxy.json")
+    parser.add_argument('--model_path', type=str, default="checkpoints/v1_5-3b-s2-ft-shelf")
+    parser.add_argument('--input-file', type=str, default="../LLaVA/armbench/test/dataset_shelf.json")
     return parser.parse_args()
 
 def load_prompts():

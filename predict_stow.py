@@ -11,8 +11,9 @@ from tqdm import tqdm
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_path', type=str, default="checkpoints/v1_5-3b-s2-ft-xyxy-sorted")
-    parser.add_argument('--input-file', type=str, default="../LLaVA/armbench/test/dataset_xyxy.json")
+    # parser.add_argument('--model_path', type=str, default="checkpoints/v1_5-3b-s2-ft-shelf")
+    parser.add_argument('--model_path', type=str, default="Efficient-Large-Model/VILA1.5-3B-s2")
+    parser.add_argument('--input-file', type=str, default="../LLaVA/data/stow/test/dataset.json")
     return parser.parse_args()
 
 def load_prompts():
@@ -34,7 +35,7 @@ if __name__ == "__main__":
 
     prompts = load_prompts()
     prompt = prompts['object_detection_xyxy']
-    image_folder = "../LLaVA/armbench/images"
+    image_folder = "../LLaVA/data/stow"
     dataset_json = json.load(open(args.input_file, "r"))
     image_files = [os.path.join(image_folder, x["image"]) for x in dataset_json]
 

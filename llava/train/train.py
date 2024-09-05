@@ -245,12 +245,11 @@ def train():
             ## llm and default multimodal model
             model_cls = LlavaLlamaModel
             config = LlavaLlamaConfig.from_pretrained(
-                model_args.model_name_or_path,
-                resume=resume_from_checkpoint
+                model_args.model_name_or_path, resume=resume_from_checkpoint
             )
         if getattr(config, "resume_path", None) is not None:
             config.resume_path = model_args.model_name_or_path
-    
+
     ## extra configurations
     prepare_config_for_training(config, model_args, training_args, data_args)
 
@@ -283,10 +282,17 @@ def train():
         model.get_mm_projector().requires_grad_(training_args.tune_mm_projector)
         mprint(f"vision tower {training_args.tune_vision_tower}")
         mprint(f"mm projector {training_args.tune_mm_projector}")
-    if not any([training_args.tune_language_model, training_args.tune_vision_tower, training_args.tune_mm_projector]):
+    if not any(
+        [
+            training_args.tune_language_model,
+            training_args.tune_vision_tower,
+            training_args.tune_mm_projector,
+        ]
+    ):
         logging.warning(
             "You are not tuning any part of the model. Please check if this is intended."
         )
+
     def need_to_modify_do_sample(generation_config):
         if generation_config.do_sample is False:
             if (
@@ -362,6 +368,16 @@ def train():
                 tokenizer=tokenizer,
                 model=model.llm,
             )
+        if model_args.loc_token:
+            special_tokens_dict = dict(
+                additional_special_tokens=tokenizer.additional_special_tokens
+                + [f"<loc_{x}>" for x in range(1000)],
+            )
+            smart_tokenizer_and_embedding_resize(
+                special_tokens_dict=special_tokens_dict,
+                tokenizer=tokenizer,
+                model=model.llm,
+            )
         if model_args.version in conversation_lib.conv_templates:
             conversation_lib.default_conversation = conversation_lib.conv_templates[
                 model_args.version
@@ -417,8 +433,11 @@ def train():
     callbacks = [AutoResumeCallback()]
 
     trainer = LLaVATrainer(
-        model=model, tokenizer=tokenizer, args=training_args,
-        callbacks=callbacks, **data_module
+        model=model,
+        tokenizer=tokenizer,
+        args=training_args,
+        callbacks=callbacks,
+        **data_module,
     )
     print(
         "length of dataloader:",
