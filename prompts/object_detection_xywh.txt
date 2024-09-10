@@ -1,0 +1,1 @@
+<image>\nFind all instances of objects. Format the result as a list of tuples, i.e. [(x1, y1, w1, h1), (x2, y2, w2, h2), ...], where x and y are the normalized pixel locations of the object centers, and w and h are the normalized object widths and heights. All values of x, y, w, and h should be between 0 and 1.
