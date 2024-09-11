@@ -8,19 +8,21 @@ from llava.eval.run_vila import eval_model
 from llava.model.builder import load_pretrained_model
 from tqdm import tqdm
 
+VILA_PATH = "/gscratch/sciencehub/zanqil/VILA"
+LLAVA_PATH = "/gscratch/sciencehub/zanqil/LLaVA"
 
 def get_args():
     parser = argparse.ArgumentParser()
-    # parser.add_argument('--model_path', type=str, default="checkpoints/v1_5-3b-s2-ft-shelf")
-    parser.add_argument('--model_path', type=str, default="Efficient-Large-Model/VILA1.5-3B-s2")
-    parser.add_argument('--input-file', type=str, default="../LLaVA/data/stow/test/dataset.json")
+    parser.add_argument('--model_path', type=str, default=os.path.join(VILA_PATH, "checkpoints/v1_5-3b-s2-ft-shelf-arm"))
+    parser.add_argument('--input-file', type=str, default=os.path.join(LLAVA_PATH, "data/stow/test/dataset.json"))
     return parser.parse_args()
 
 def load_prompts():
     prompts = {}
-    files = os.listdir("prompts")
+    prompt_path = os.path.join(VILA_PATH, "prompts")
+    files = os.listdir(prompt_path)
     for file in files:
-        with open(os.path.join("prompts", file), "r") as f:
+        with open(os.path.join(prompt_path, file), "r") as f:
             name = file.split(".")[0]
             prompts[name] = f.read()
     return prompts
@@ -35,7 +37,7 @@ if __name__ == "__main__":
 
     prompts = load_prompts()
     prompt = prompts['object_detection_xyxy']
-    image_folder = "../LLaVA/data/stow"
+    image_folder = os.path.join(LLAVA_PATH, "data/stow")
     dataset_json = json.load(open(args.input_file, "r"))
     image_files = [os.path.join(image_folder, x["image"]) for x in dataset_json]
 
@@ -63,7 +65,8 @@ if __name__ == "__main__":
             "text": output
         })
 
-    output_file = os.path.join("predictions", f"{args.model_path.split('/')[-1]}.json")
+    predictions_path = os.path.join(VILA_PATH, "predictions")
+    output_file = os.path.join(predictions_path, f"{args.model_path.split('/')[-1]}.json")
     if not os.path.exists(os.path.dirname(output_file)):
         os.makedirs(os.path.dirname(output_file))
 

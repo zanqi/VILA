@@ -1,12 +1,12 @@
 #!/bin/bash
 
-#SBATCH --job-name=vila_co
+#SBATCH --job-name=vilaloc
 #SBATCH --mail-type=END
 #SBATCH --mail-user=zanqil@cs.washington.edu
 
 #SBATCH --account=sciencehub
-#SBATCH --partition=gpu-a40
-#SBATCH --gpus=1
+#SBATCH --partition=ckpt
+#SBATCH --gpus=a40:1
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=12
 #SBATCH --mem=240G
@@ -33,7 +33,7 @@ BASE_MODEL_PATH="Efficient-Large-Model/VILA1.5-3B-s2"
 echo "BASE_MODEL_PATH="$BASE_MODEL_PATH
 
 n_nodes=1
-OUTPUT="v1_5-3b-s2-ft-shelf-arm"
+OUTPUT="v1_5-3b-s2-ft-loc"
 
 
 CMD="torchrun --nnodes=$n_node --nproc_per_node=1 --master_port=25001 \
@@ -42,8 +42,8 @@ CMD="torchrun --nnodes=$n_node --nproc_per_node=1 --master_port=25001 \
     --deepspeed ./scripts/zero3_offload.json \
     --model_name_or_path $BASE_MODEL_PATH \
     --version v1 \
-    --data_path ../LLaVA/armbench/train/dataset_shelf_arm.json \
-    --validation_data_path ../LLaVA/armbench/validation/dataset_shelf_arm.json \
+    --data_path ../LLaVA/armbench/train/dataset_loc.json \
+    --validation_data_path ../LLaVA/armbench/validation/dataset_loc.json \
     --image_folder ../LLaVA/armbench/images/ \
     --vision_tower google/siglip-so400m-patch14-384 \
     --s2 True \
@@ -57,6 +57,7 @@ CMD="torchrun --nnodes=$n_node --nproc_per_node=1 --master_port=25001 \
     --mm_vision_select_layer -2 \
     --mm_use_im_start_end False \
     --mm_use_im_patch_token False \
+    --loc_token True \
     --image_aspect_ratio resize \
     --bf16 True \
     --output_dir ./checkpoints/$OUTPUT \

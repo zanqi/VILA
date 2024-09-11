@@ -145,6 +145,33 @@ def safe_save_model_for_hf_trainer(trainer: transformers.Trainer, output_dir: st
         trainer._save(output_dir, state_dict=cpu_state_dict)  # noqa
 
 
+def add_tokens_and_resize(
+    tokens,
+    tokenizer: transformers.PreTrainedTokenizer,
+    model: transformers.PreTrainedModel,
+):
+    """Resize tokenizer and embedding.
+
+    Note: This is the unoptimized version that may make your embedding size not be divisible by 64.
+    """
+    num_new_tokens = tokenizer.add_tokens(tokens)
+    model.resize_token_embeddings(len(tokenizer))
+
+    if num_new_tokens > 0:
+        input_embeddings = model.get_input_embeddings().weight.data
+        output_embeddings = model.get_output_embeddings().weight.data
+
+        input_embeddings_avg = input_embeddings[:-num_new_tokens].mean(
+            dim=0, keepdim=True
+        )
+        output_embeddings_avg = output_embeddings[:-num_new_tokens].mean(
+            dim=0, keepdim=True
+        )
+
+        input_embeddings[-num_new_tokens:] = input_embeddings_avg
+        output_embeddings[-num_new_tokens:] = output_embeddings_avg
+
+
 def smart_tokenizer_and_embedding_resize(
     special_tokens_dict: Dict,
     tokenizer: transformers.PreTrainedTokenizer,
@@ -369,12 +396,9 @@ def train():
                 model=model.llm,
             )
         if model_args.loc_token:
-            special_tokens_dict = dict(
-                additional_special_tokens=tokenizer.additional_special_tokens
-                + [f"<loc_{x}>" for x in range(1000)],
-            )
-            smart_tokenizer_and_embedding_resize(
-                special_tokens_dict=special_tokens_dict,
+            loc_tokens = [f"<loc_{x}>" for x in range(11)]
+            add_tokens_and_resize(
+                loc_tokens,
                 tokenizer=tokenizer,
                 model=model.llm,
             )
