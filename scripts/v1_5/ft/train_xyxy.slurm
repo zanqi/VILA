@@ -5,11 +5,11 @@
 #SBATCH --mail-user=zanqil@cs.washington.edu
 
 #SBATCH --account=sciencehub
+#SBATCH --gpus=a40:1
 #SBATCH --partition=ckpt
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=12
 #SBATCH --mem=240G
-#SBATCH --gpus=a40:1
 #SBATCH --time=2-00:00:00
 
 #SBATCH --chdir=/gscratch/sciencehub/zanqil/VILA
@@ -42,8 +42,8 @@ CMD="torchrun --nnodes=$n_node --nproc_per_node=1 --master_port=25001 \
     --deepspeed ./scripts/zero3_offload.json \
     --model_name_or_path $BASE_MODEL_PATH \
     --version v1 \
-    --data_path ../LLaVA/armbench/train/dataset_xyxy.json \
-    --validation_data_path ../LLaVA/armbench/validation/dataset_xyxy.json \
+    --data_path ../LLaVA/armbench/train/dataset_xyxy_sorted.json \
+    --validation_data_path ../LLaVA/armbench/validation/dataset_xyxy_sorted.json \
     --image_folder ../LLaVA/armbench/images/ \
     --vision_tower google/siglip-so400m-patch14-384 \
     --s2 True \
