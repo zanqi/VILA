@@ -695,6 +695,7 @@ class LazySupervisedDataset(Dataset):
         tokenizer: transformers.PreTrainedTokenizer,
         data_args: DataArguments,
         training_args: TrainingArguments,
+        tran: bool = False,
     ):
         super(LazySupervisedDataset, self).__init__()
         try:
@@ -710,6 +711,7 @@ class LazySupervisedDataset(Dataset):
         self.list_data_dict = list_data_dict
         self.data_args = data_args
         self.image_folder = image_folder
+        self.tran = tran
 
     def __len__(self):
         return len(self.list_data_dict)
@@ -769,7 +771,10 @@ class LazySupervisedDataset(Dataset):
                     [process_image(img, self.data_args, self.image_folder) for img in image_file]
                 )
             else:
-                image = process_image(image_file, self.data_args, self.image_folder)
+                if self.tran:
+                    image = process_image(image_file, self.data_args, self.image_folder, sources[0]["conversations"])
+                else:
+                    image = process_image(image_file, self.data_args, self.image_folder)
             sources = preprocess_multimodal(copy.deepcopy([e["conversations"] for e in sources]), self.data_args)
         elif ("video" in sources[0]) or ("video_id" in sources[0]):
             num_video_frames = self.data_args.num_video_frames
@@ -1984,7 +1989,7 @@ def build_datasets_ft(
 ):
     data_path = data_args.data_path if split == "train" else data_args.validation_data_path
     ds = LazySupervisedDataset(
-        tokenizer=tokenizer, data_path=data_path, data_args=data_args, image_folder=data_args.image_folder, training_args=training_args,
+        tokenizer=tokenizer, data_path=data_path, data_args=data_args, image_folder=data_args.image_folder, training_args=training_args, tran=split=="train"
     )
 
     if split == "train":

@@ -1,2 +1,2 @@
 <image>
-Find all instances of objects. Format the result as a list of tuples, i.e. [(xmin1, ymin1, xmax1, ymax1), (xmin2, ymin2, xmax2, ymax2), ...], where xmin and ymin are the normalized pixel locations of the object top left corner, and xmax and ymax are the normalized pixel locations of the ojbect bottom right corner. All values of xmin, ymin, xmax, and ymax should be between 0 and 1.
+Find all instances of objects. Format the result as a list of tuples, i.e. [(xmin1, ymin1, xmax1, ymax1), (xmin2, ymin2, xmax2, ymax2), ...], where xmin and ymin are the normalized coordinates of the object top left corner, and xmax and ymax are the normalized coordinates of the ojbect bottom right corner. All values of xmin, ymin, xmax, and ymax should be between 0 and 1.

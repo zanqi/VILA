@@ -14,6 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import json
 from PIL import Image
 from io import BytesIO
 import base64
@@ -26,6 +27,8 @@ from llava.constants import IMAGE_TOKEN_INDEX
 
 import tempfile
 from io import BytesIO
+from torchvision import datapoints
+from torchvision.transforms import v2
 
 
 def get_frame_from_vcap(vidcap, num_frames=10, fps=None, frame_count=None):
@@ -40,7 +43,7 @@ def get_frame_from_vcap(vidcap, num_frames=10, fps=None, frame_count=None):
         return [
             Image.new("RGB", (720, 720)),
         ] * num_frames
-    
+
     duration = frame_count / fps
     frame_interval = frame_count // num_frames
     if frame_interval == 0 and frame_count <= 1:
@@ -76,10 +79,12 @@ def get_frame_from_vcap(vidcap, num_frames=10, fps=None, frame_count=None):
                 count += 1
             elif count >= 1:
                 width, height = images[-1].size
-                images = [Image.new("RGB", (width, height))] * (num_frames - len(images)) + images
+                images = [Image.new("RGB", (width, height))] * (
+                    num_frames - len(images)
+                ) + images
                 print("padding frames:", (num_frames - len(images)))
                 return images
-            else: 
+            else:
                 break
     raise ValueError("Did not find enough frames in the video. return empty image.")
 
@@ -134,7 +139,7 @@ def expand2square(pil_img, background_color):
     If the image is taller than it is wide, padding is added to the left and right.
     """
     width, height = pil_img.size
-    if pil_img.mode == 'L':
+    if pil_img.mode == "L":
         background_color = background_color[0]
     if width == height:
         return pil_img
@@ -147,7 +152,13 @@ def expand2square(pil_img, background_color):
         result.paste(pil_img, ((height - width) // 2, 0))
         return result
 
-def process_image(image_file, data_args, image_folder):
+
+class Rounded(float):
+    def __repr__(self):
+        return "%.2f" % self if self > 0 else "0.00"
+
+
+def process_image(image_file, data_args, image_folder, conversation=None):
     processor = data_args.image_processor
     if isinstance(image_file, str):
         if image_folder is not None:
@@ -157,9 +168,33 @@ def process_image(image_file, data_args, image_folder):
     else:
         # image is stored in bytearray
         image = image_file
+    if conversation:
+        w, h = image.size
+        transforms = v2.Compose(
+            [
+                v2.RandomResizedCrop(size=(h, w), antialias=True),
+                v2.RandomHorizontalFlip(p=0.5),
+            ]
+        )
+        bbox = json.loads(conversation[1]["value"].replace("(", "[").replace(")", "]"))
+        w, h = image.size
+        bbox *= np.array([w, h, w, h])
+        bbox = datapoints.BoundingBox(bbox, format="xyxy", spatial_size=(h, w))
+        transformed_img, transformed_bbox = transforms(image, bbox)
+        bbox_out = transformed_bbox.numpy() / np.array([w, h, w, h])
+        bbox_out = [b for b in bbox_out if (b[2] - b[0]) * (b[3] - b[1]) > 0.01]
+        if bbox_out:
+            image = transformed_img
+            conversation[1]["value"] = str(
+                [
+                    (Rounded(b[0]), Rounded(b[1]), Rounded(b[2]), Rounded(b[3]))
+                    for b in bbox_out
+                ]
+            )
+
     if data_args.image_aspect_ratio == "resize":
         if hasattr(data_args.image_processor, "crop_size"):
-            # CLIP vision tower
+            # CLIP vision tower˜
             crop_size = data_args.image_processor.crop_size
         else:
             # SIGLIP vision tower
@@ -191,6 +226,7 @@ def process_image(image_file, data_args, image_folder):
         # For InternVIT, default is resize
         image = processor.preprocess(image, return_tensors="pt")["pixel_values"][0]
     return image
+
 
 def process_images(images, image_processor, model_cfg):
 
