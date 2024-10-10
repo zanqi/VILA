@@ -1,12 +1,12 @@
 #!/bin/bash
 
-#SBATCH --job-name=vila_test
+#SBATCH --job-name=vila_syn_stow
 #SBATCH --mail-type=END
 #SBATCH --mail-user=zanqil@cs.washington.edu
 
 #SBATCH --account=sciencehub
-#SBATCH --partition=gpu-a40
-#SBATCH --gpus=1
+#SBATCH --partition=ckpt
+#SBATCH --gpus=a40:1
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=12
 #SBATCH --mem=240G
@@ -14,8 +14,8 @@
 
 #SBATCH --chdir=/gscratch/sciencehub/zanqil/VILA
 #SBATCH --export=all
-#SBATCH --output=/gscratch/sciencehub/zanqil/VILA/output/output_test
-#SBATCH --error=/gscratch/sciencehub/zanqil/VILA/output/error_test
+#SBATCH --output=/gscratch/sciencehub/zanqil/VILA/output/output_syn_stow_trfm
+#SBATCH --error=/gscratch/sciencehub/zanqil/VILA/output/error_syn_stow_trfm
 
 #!/bin/bash
 
@@ -29,11 +29,12 @@ n_node=${SLURM_JOB_NUM_NODES:-1}
 
 echo "MASTER_ADDR="$MASTER_ADDR
 echo "JobID: $SLURM_JOB_ID | Full list: $worker_list"
-BASE_MODEL_PATH="Efficient-Large-Model/VILA1.5-3B-s2"
+# BASE_MODEL_PATH="Efficient-Large-Model/VILA1.5-3B-s2"
+BASE_MODEL_PATH="checkpoints/v1_5-3b-s2-ft-xyxy-sorted"
 echo "BASE_MODEL_PATH="$BASE_MODEL_PATH
 
 n_nodes=1
-OUTPUT="v1_5-3b-s2-ft-test"
+OUTPUT="v1_5-3b-s2-ft-syn-stow-trfm"
 
 
 CMD="torchrun --nnodes=$n_node --nproc_per_node=1 --master_port=25001 \
@@ -42,8 +43,8 @@ CMD="torchrun --nnodes=$n_node --nproc_per_node=1 --master_port=25001 \
     --deepspeed ./scripts/zero3_offload.json \
     --model_name_or_path $BASE_MODEL_PATH \
     --version v1 \
-    --data_path ../LLaVA/armbench/train/dataset_xyxy_sorted.json \
-    --validation_data_path ../LLaVA/armbench/validation/dataset_xyxy_sorted.json \
+    --data_path ../LLaVA/armbench/train/dataset_seq.json \
+    --validation_data_path ../LLaVA/armbench/validation/dataset_seq.json \
     --image_folder ../LLaVA/armbench/images/ \
     --vision_tower google/siglip-so400m-patch14-384 \
     --s2 True \
@@ -58,12 +59,13 @@ CMD="torchrun --nnodes=$n_node --nproc_per_node=1 --master_port=25001 \
     --mm_use_im_start_end False \
     --mm_use_im_patch_token False \
     --image_aspect_ratio resize \
+    --transform_image True \
     --bf16 True \
     --output_dir ./checkpoints/$OUTPUT \
     --num_train_epochs 1 \
-    --per_device_train_batch_size 32 \
+    --per_device_train_batch_size 4 \
     --per_device_eval_batch_size 4 \
-    --gradient_accumulation_steps 1 \
+    --gradient_accumulation_steps 32 \
     --evaluation_strategy "steps" \
     --eval_steps 0.1 \
     --save_strategy "steps" \

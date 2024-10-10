@@ -17,7 +17,7 @@ def get_args():
     parser.add_argument(
         "--model_path",
         type=str,
-        default=os.path.join(VILA_PATH, "checkpoints/v1_5-3b-s2-ft-xyxy-sorted"),
+        default=os.path.join(VILA_PATH, "checkpoints/v1_5-3b-s2-ft-test"),
         # default="Efficient-Large-Model/VILA1.5-3B-s2"
     )
     parser.add_argument(
@@ -78,7 +78,7 @@ if __name__ == "__main__":
         output = output[output.find("["):output.rfind("]") + 1]
         res.append({"id": x["id"], "text": output})
 
-    output_file = os.path.join("predictions", f"{args.model_path.split('/')[-1]}-rag.json")
+    output_file = os.path.join("predictions", f"{args.model_path.split('/')[-1]}_arm_rag.json")
     if not os.path.exists(os.path.dirname(output_file)):
         os.makedirs(os.path.dirname(output_file))
 

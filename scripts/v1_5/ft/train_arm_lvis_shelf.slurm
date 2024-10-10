@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=vila_test
+#SBATCH --job-name=vila_ft
 #SBATCH --mail-type=END
 #SBATCH --mail-user=zanqil@cs.washington.edu
 
@@ -14,8 +14,8 @@
 
 #SBATCH --chdir=/gscratch/sciencehub/zanqil/VILA
 #SBATCH --export=all
-#SBATCH --output=/gscratch/sciencehub/zanqil/VILA/output/output_test
-#SBATCH --error=/gscratch/sciencehub/zanqil/VILA/output/error_test
+#SBATCH --output=/gscratch/sciencehub/zanqil/VILA/output/output
+#SBATCH --error=/gscratch/sciencehub/zanqil/VILA/output/error
 
 #!/bin/bash
 
@@ -33,7 +33,7 @@ BASE_MODEL_PATH="Efficient-Large-Model/VILA1.5-3B-s2"
 echo "BASE_MODEL_PATH="$BASE_MODEL_PATH
 
 n_nodes=1
-OUTPUT="v1_5-3b-s2-ft-test"
+OUTPUT="v1_5-3b-s2-ft-arm-lvis-shelf"
 
 
 CMD="torchrun --nnodes=$n_node --nproc_per_node=1 --master_port=25001 \
@@ -42,8 +42,8 @@ CMD="torchrun --nnodes=$n_node --nproc_per_node=1 --master_port=25001 \
     --deepspeed ./scripts/zero3_offload.json \
     --model_name_or_path $BASE_MODEL_PATH \
     --version v1 \
-    --data_path ../LLaVA/armbench/train/dataset_xyxy_sorted.json \
-    --validation_data_path ../LLaVA/armbench/validation/dataset_xyxy_sorted.json \
+    --data_path ../LLaVA/armbench/train/dataset_arm_lvis_shelf.json \
+    --validation_data_path ../LLaVA/armbench/validation/dataset_arm_lvis_shelf.json \
     --image_folder ../LLaVA/armbench/images/ \
     --vision_tower google/siglip-so400m-patch14-384 \
     --s2 True \

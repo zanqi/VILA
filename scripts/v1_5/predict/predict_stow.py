@@ -13,7 +13,7 @@ LLAVA_PATH = "/gscratch/sciencehub/zanqil/LLaVA"
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_path', type=str, default=os.path.join(VILA_PATH, "checkpoints/v1_5-3b-s2-ft-shelf-arm"))
+    parser.add_argument('--model_path', type=str, default=os.path.join(VILA_PATH, "checkpoints/v1_5-3b-s2-ft-xyxy-sorted"))
     parser.add_argument('--input-file', type=str, default=os.path.join(LLAVA_PATH, "data/stow/test/dataset.json"))
     return parser.parse_args()
 
@@ -49,7 +49,7 @@ if __name__ == "__main__":
             "model_path": model_path,
             "model_base": None,
             "query": prompt,
-            "conv_mode": None,
+            "conv_mode": 'v1',
             "image_file": image_file,
             "video_file": None,
             "sep": ",",
@@ -66,7 +66,7 @@ if __name__ == "__main__":
         })
 
     predictions_path = os.path.join(VILA_PATH, "predictions")
-    output_file = os.path.join(predictions_path, f"{args.model_path.split('/')[-1]}.json")
+    output_file = os.path.join(predictions_path, f"{args.model_path.split('/')[-1]}-stow.json")
     if not os.path.exists(os.path.dirname(output_file)):
         os.makedirs(os.path.dirname(output_file))
 

@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_path', type=str, default="checkpoints/v1_5-3b-s2-ft-xyxy-sorted")
+    parser.add_argument('--model_path', type=str, default="checkpoints/v1_5-3b-s2-ft-test")
     parser.add_argument('--input-file', type=str, default="../LLaVA/armbench/test/dataset_xyxy.json")
     return parser.parse_args()
 
@@ -46,7 +46,7 @@ if __name__ == "__main__":
             "model_path": model_path,
             "model_base": None,
             "query": prompt,
-            "conv_mode": None,
+            "conv_mode": 'v1',
             "image_file": image_file,
             "video_file": None,
             "sep": ",",

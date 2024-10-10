@@ -17,7 +17,7 @@ def get_args():
     parser.add_argument(
         "--model_path",
         type=str,
-        default=os.path.join(VILA_PATH, "checkpoints/v1_5-3b-s2-ft-shelf-arm"),
+        default=os.path.join(VILA_PATH, "checkpoints/v1_5-3b-s2-ft-syn-stow-trfm"),
     )
     parser.add_argument(
         "--input-file",
@@ -62,7 +62,7 @@ if __name__ == "__main__":
                 "model_path": model_path,
                 "model_base": None,
                 "query": prompt,
-                "conv_mode": None,
+                "conv_mode": 'v1',
                 "image_file": ",".join(img_files),
                 "video_file": None,
                 "sep": ",",
@@ -74,7 +74,7 @@ if __name__ == "__main__":
         )()
 
         output = eval_model(eval_args, model, tokenizer, image_processor)
-        res.append({"id": x["id"], "text": output})
+        res.append({"id": x["id"], "image_file": ",".join(img_files),"text": output})
 
     predictions_path = os.path.join(VILA_PATH, "predictions")
     output_file = os.path.join(
